@@ -1,8 +1,8 @@
-# Assignment 1 - Linux Diagnostic Toolkit
+## Assignment 1 - Linux Diagnostic Toolkit
 
-Bash scripts for gathering system info, checking disk usage, and running basic network diagnostics on a Linux machine.
+A set of bash scripts that pull system info, check disk usage, and run basic network diagnostics. Written for Linux but should mostly work in WSL too.
 
-## Setup
+## Getting started
 
 Clone the repo and make the scripts executable:
 
@@ -12,13 +12,12 @@ cd assignment-1
 chmod +x system-info.sh disk-check.sh network-check.sh grade.sh
 ```
 
-The `logs/` directory gets created automatically when any script runs.
+The `logs/` folder is created automatically the first time any script runs.
 
-## Usage
 
 ### system-info.sh
 
-Prints hostname, current user, date/time, OS, kernel version, uptime, CPU and memory info, and the current working directory.
+Prints out some general info about the machine -- hostname, who's logged in, the date, OS/kernel details, uptime, CPU, memory, and the present working directory.
 
 ```bash
 ./system-info.sh
@@ -26,47 +25,46 @@ Prints hostname, current user, date/time, OS, kernel version, uptime, CPU and me
 
 ### disk-check.sh
 
-Checks if disk usage is above a given threshold. The threshold must be between 1 and 100. You can optionally pass a path (defaults to `/`).
+Checks whether disk usage is over a certain threshold (between 1 and 100). You can optionally give it a path to check, otherwise it defaults.
 
 ```bash
-./disk-check.sh 80           # check root filesystem at 80%
-./disk-check.sh 90 /home     # check /home at 90%
-```
+./disk-check.sh 80           
 
-- Exits `0` if usage is below the threshold
-- Exits `1` if usage is at or above the threshold
-- Exits `2` for bad input (non-numeric, out of range, path doesn't exist)
+./disk-check.sh 90 /home     ```
+
+Exit codes:
+- `0` -- usage is under the threshold
+- `1` -- usage is at or above the threshold
+- `2` -- something was wrong with the input
 
 ### network-check.sh
 
-Runs DNS resolution, a ping check, and lists network interfaces for a host. Optionally checks a TCP port.
+Does a DNS lookup, pings the host, and lists network interfaces. You can also pass a port number to test a TCP connection.
 
 ```bash
 ./network-check.sh google.com
-./network-check.sh 192.168.1.1 22    # also test port 22
+./network-check.sh 192.168.1.1 22 
 ```
 
-- Port must be between 1 and 65535
-- Exits `2` for invalid input
+Port has to be between 1 and 65535, exits with `2` if it's not.
 
-## Testing
+## Running the grader
 
-Run the grader to check everything works:
+There's a grading script that verifies everything works:
 
 ```bash
 ./grade.sh
 ```
 
-This checks that all files exist, scripts have valid syntax and are executable, outputs contain the right info, bad inputs are rejected properly, logs are being created, and git history meets the requirements.
+It checks file existence, syntax, permissions, output content, input validation, logging, and git history.
 
 ## Logging
 
-Each script writes a timestamped entry to a log file under `logs/` (e.g. `logs/disk-check.log`).
+Every script appends a timestamped line to its own log file under `logs/` each time it runs.
 
-## Assumptions
+## Notes
 
-- Designed for Linux -- commands like `free`, `ip`, and `/proc/cpuinfo` might not work on macOS or Windows without WSL
-- Standard utilities (`hostname`, `whoami`, `date`, `uname`, `df`, `ping`) are available
-- DNS resolution tries `getent`, then `dig`, then `nslookup` depending on what's installed
-- TCP port check uses bash `/dev/tcp` or falls back to `nc`
-- No hardcoded machine-specific values
+- This is built for Linux -- things like `free`, `ip`, and `/proc/cpuinfo` won't be available on macOS without changes
+- For DNS resolution it tries `getent` first, then `dig`, then `nslookup` depending on what's installed
+- The TCP port check uses bash's `/dev/tcp` trick, or falls back to `nc` if that's not available
+- No hardcoded values that tie it to a specific machine
