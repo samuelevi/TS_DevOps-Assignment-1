@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# checks disk usage against a given threshold percentage
+
 set -u
 
 LOGDIR="$(dirname "$0")/logs"
 mkdir -p "$LOGDIR"
 
-# need at least a threshold argument
+
 if [ $# -lt 1 ]; then
     echo "Usage: ./disk-check.sh <threshold> [path]" >&2
     exit 2
@@ -14,7 +14,7 @@ fi
 threshold="$1"
 target="${2:-/}"
 
-# validate that threshold is actually a number
+
 if ! [[ "$threshold" =~ ^[0-9]+$ ]]; then
     echo "Error: Threshold must be a numeric value." >&2
     exit 2
@@ -30,7 +30,6 @@ if [ ! -d "$target" ]; then
     exit 2
 fi
 
-# grab the usage % from df, strip the trailing % sign
 usage=$(df "$target" 2>/dev/null | tail -1 | awk '{print $5}' | tr -d '%')
 
 if [ -z "$usage" ]; then
