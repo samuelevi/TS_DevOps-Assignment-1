@@ -1,49 +1,53 @@
 #!/usr/bin/env bash
+# checks disk usage against a given threshold percentage
 set -u
 
-LOG_DIR="$(dirname "$0")/logs"
-mkdir -p "$LOG_DIR"
+LOGDIR="$(dirname "$0")/logs"
+mkdir -p "$LOGDIR"
 
+# need at least a threshold argument
 if [ $# -lt 1 ]; then
     echo "Usage: ./disk-check.sh <threshold> [path]" >&2
     exit 2
 fi
 
-THRESHOLD="$1"
-PATH_TO_CHECK="${2:-/}"
+threshold="$1"
+target="${2:-/}"
 
-if ! [[ "$THRESHOLD" =~ ^[0-9]+$ ]]; then
+# validate that threshold is actually a number
+if ! [[ "$threshold" =~ ^[0-9]+$ ]]; then
     echo "Error: Threshold must be a numeric value." >&2
     exit 2
 fi
 
-if [ "$THRESHOLD" -lt 1 ] || [ "$THRESHOLD" -gt 100 ]; then
+if [ "$threshold" -lt 1 ] || [ "$threshold" -gt 100 ]; then
     echo "Error: Threshold must be between 1 and 100." >&2
     exit 2
 fi
 
-if [ ! -d "$PATH_TO_CHECK" ]; then
-    echo "Error: Path '$PATH_TO_CHECK' does not exist." >&2
+if [ ! -d "$target" ]; then
+    echo "Error: Path '$target' does not exist." >&2
     exit 2
 fi
 
-USAGE=$(df "$PATH_TO_CHECK" 2>/dev/null | tail -1 | awk '{print $5}' | tr -d '%')
+# grab the usage % from df, strip the trailing % sign
+usage=$(df "$target" 2>/dev/null | tail -1 | awk '{print $5}' | tr -d '%')
 
-if [ -z "$USAGE" ]; then
-    echo "Error: Could not determine disk usage for '$PATH_TO_CHECK'." >&2
+if [ -z "$usage" ]; then
+    echo "Error: Could not determine disk usage for '$target'." >&2
     exit 1
 fi
 
-echo "Disk usage for $PATH_TO_CHECK: ${USAGE}%"
-echo "Threshold: ${THRESHOLD}%"
+echo "Disk usage for $target: ${usage}%"
+echo "Threshold: ${threshold}%"
 
-TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-echo "$TIMESTAMP - disk-check executed for $PATH_TO_CHECK (usage: ${USAGE}%, threshold: ${THRESHOLD}%)" >> "$LOG_DIR/disk-check.log"
+ts=$(date '+%Y-%m-%d %H:%M:%S')
+echo "$ts - disk-check executed for $target (usage: ${usage}%, threshold: ${threshold}%)" >> "$LOGDIR/disk-check.log"
 
-if [ "$USAGE" -ge "$THRESHOLD" ]; then
-    echo "WARNING: Disk usage (${USAGE}%) has reached or exceeded threshold (${THRESHOLD}%)."
+if [ "$usage" -ge "$threshold" ]; then
+    echo "WARNING: Disk usage (${usage}%) has reached or exceeded threshold (${threshold}%)."
     exit 1
 else
-    echo "OK: Disk usage (${USAGE}%) is below threshold (${THRESHOLD}%)."
+    echo "OK: Disk usage (${usage}%) is below threshold (${threshold}%)."
     exit 0
 fi
