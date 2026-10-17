@@ -1,54 +1,57 @@
 #!/usr/bin/env bash
+
 set -u
 
-LOG_DIR="$(dirname "$0")/logs"
-mkdir -p "$LOG_DIR"
+LOGDIR="$(dirname "$0")/logs"
+mkdir -p "$LOGDIR"
 
 if [ $# -lt 1 ]; then
     echo "Usage: ./network-check.sh <hostname-or-ip> [port]" >&2
     exit 2
 fi
 
-HOST="$1"
-PORT="${2:-}"
+host="$1"
+port="${2:-}"
 
-if [ -z "$HOST" ]; then
+if [ -z "$host" ]; then
     echo "Error: Hostname or IP address is required." >&2
     exit 2
 fi
 
-echo "=== Network Check for $HOST ==="
+echo "=== Network Check for $host ==="
 echo ""
+
 
 echo "--- Host Resolution ---"
+resolved=""
 if command -v getent >/dev/null 2>&1; then
-    RESOLVED=$(getent hosts "$HOST" 2>/dev/null | awk '{print $1}')
+    resolved=$(getent hosts "$host" 2>/dev/null | awk '{print $1}')
 elif command -v dig >/dev/null 2>&1; then
-    RESOLVED=$(dig +short "$HOST" 2>/dev/null | head -1)
+    resolved=$(dig +short "$host" 2>/dev/null | head -1)
 elif command -v nslookup >/dev/null 2>&1; then
-    RESOLVED=$(nslookup "$HOST" 2>/dev/null | awk '/^Address: / { print $2 }' | tail -1)
-else
-    RESOLVED=""
+    resolved=$(nslookup "$host" 2>/dev/null | awk '/^Address: / { print $2 }' | tail -1)
 fi
 
-if [ -n "$RESOLVED" ]; then
-    echo "Resolved address: $RESOLVED"
+if [ -n "$resolved" ]; then
+    echo "Resolved address: $resolved"
 else
-    echo "Could not resolve host: $HOST"
+    echo "Could not resolve host: $host"
 fi
 echo ""
+
 
 echo "--- Connectivity Check ---"
 if command -v ping >/dev/null 2>&1; then
-    if ping -c 2 -W 3 "$HOST" >/dev/null 2>&1; then
-        echo "Ping to $HOST: SUCCESS"
+    if ping -c 2 -W 3 "$host" >/dev/null 2>&1; then
+        echo "Ping to $host: SUCCESS"
     else
-        echo "Ping to $HOST: FAILED"
+        echo "Ping to $host: FAILED"
     fi
 else
     echo "ping command not available"
 fi
 echo ""
+
 
 echo "--- Network Interfaces ---"
 if command -v ip >/dev/null 2>&1; then
@@ -60,36 +63,38 @@ else
 fi
 echo ""
 
-if [ -n "$PORT" ]; then
-    if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
+
+if [ -n "$port" ]; then
+    if ! [[ "$port" =~ ^[0-9]+$ ]]; then
         echo "Error: Port must be a numeric value." >&2
         exit 2
     fi
 
-    if [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
+    if [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
         echo "Error: Port must be between 1 and 65535." >&2
         exit 2
     fi
 
-    echo "--- TCP Port Check ($HOST:$PORT) ---"
+    echo "--- TCP Port Check ($host:$port) ---"
+    
     if command -v bash >/dev/null 2>&1; then
-        if (echo >/dev/tcp/"$HOST"/"$PORT") 2>/dev/null; then
-            echo "TCP connection to $HOST:$PORT: SUCCESS"
+        if (echo >/dev/tcp/"$host"/"$port") 2>/dev/null; then
+            echo "TCP connection to $host:$port: SUCCESS"
         else
-            echo "TCP connection to $HOST:$PORT: FAILED"
+            echo "TCP connection to $host:$port: FAILED"
         fi
     elif command -v nc >/dev/null 2>&1; then
-        if nc -z -w 3 "$HOST" "$PORT" 2>/dev/null; then
-            echo "TCP connection to $HOST:$PORT: SUCCESS"
+        if nc -z -w 3 "$host" "$port" 2>/dev/null; then
+            echo "TCP connection to $host:$port: SUCCESS"
         else
-            echo "TCP connection to $HOST:$PORT: FAILED"
+            echo "TCP connection to $host:$port: FAILED"
         fi
     else
         echo "No TCP check tool available"
     fi
 fi
 
-TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-echo "$TIMESTAMP - network-check executed for $HOST${PORT:+ port $PORT}" >> "$LOG_DIR/network-check.log"
+ts=$(date '+%Y-%m-%d %H:%M:%S')
+echo "$ts - network-check executed for $host${port:+ port $port}" >> "$LOGDIR/network-check.log"
 
 exit 0
